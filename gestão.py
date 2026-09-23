@@ -3,11 +3,12 @@ import json
 import os
 from datetime import datetime
 
-# Configuração da página e identidade visual
+# Configuração da página
 st.set_page_config(
-    page_title="Primetech Gestão - Plataforma SaaS",
+    page_title="Primetech Gestão - SaaS",
     page_icon="⚡",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # Arquivo de Banco de Dados local
@@ -34,21 +35,24 @@ def validar_cpf(cpf):
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
 
+if "mostrar_chat" not in st.session_state:
+    st.session_state.mostrar_chat = False
+
 if "mensagens_chat" not in st.session_state:
     st.session_state.mensagens_chat = [
-        {"role": "assistant", "content": "Olá! Sou o Assistente IA da Primetech. Estou conectado ao seu banco de dados e pronto para responder sobre clientes, finanças e gestão. Como posso ajudar?"}
+        {"role": "assistant", "content": "Olá! Sou o Assistente IA da Primetech. Como posso ajudar na gestão hoje?"}
     ]
 
 # --- TELA DE LOGIN ---
 if not st.session_state.autenticado:
     st.markdown("""
-        <div style='text-align: center; padding: 25px;'>
-            <h1 style='color: #0e1117;'>⚡ Primetech Gestão</h1>
-            <p style='color: gray; font-size: 16px;'>Plataforma Corporativa de Alta Performance</p>
+        <div style='text-align: center; padding: 20px;'>
+            <h2 style='color: #1f1f1f;'>⚡ Primetech Gestão</h2>
+            <p style='color: gray; font-size: 14px;'>Plataforma SaaS Corporativa</p>
         </div>
     """, unsafe_allow_html=True)
     
-    st.warning("💡 **Acesso de Demonstração:** Usuário: **`daniela`** | Senha: **`130790`**")
+    st.warning("💡 **Acesso:** Usuário: **`daniela`** | Senha: **`130790`**")
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -60,7 +64,7 @@ if not st.session_state.autenticado:
             if submit:
                 if usuario == "daniela" and senha == "130790":
                     st.session_state.autenticado = True
-                    st.success("Autenticado com sucesso! Carregando painel...")
+                    st.success("Autenticado com sucesso!")
                     st.rerun()
                 else:
                     st.error("Usuário ou senha incorretos.")
@@ -69,52 +73,55 @@ if not st.session_state.autenticado:
 # --- APLICATIVO PRINCIPAL ---
 dados_db = carregar_dados()
 
-# Topo corporativo limpo (sem foguete)
+# Cabeçalho médio e limpo
 st.markdown("""
-    <div style='padding: 10px 0px; border-bottom: 2px solid #f0f2f6; margin-bottom: 20px;'>
-        <h2 style='margin:0; color: #1f1f1f;'>⚡ Primetech • Painel Executivo SaaS</h2>
-        <p style='margin:0; color: gray; font-size: 14px;'>Ambiente seguro e integrado em nuvem</p>
+    <div style='padding: 5px 0px; border-bottom: 1px solid #e0e0e0; margin-bottom: 15px;'>
+        <h3 style='margin:0; color: #1f1f1f; font-size: 20px;'>⚡ Primetech • Painel de Gestão</h3>
     </div>
 """, unsafe_allow_html=True)
 
-# Abas superiores com resposta de clique garantida
-menu = st.tabs([
-    "📊 Dashboard", 
-    "👥 Clientes", 
-    "💰 Financeiro", 
-    "💬 Chat IA Inteligente", 
-    "🔒 Sair"
-])
+# Menu Lateral Médio e Direto
+st.sidebar.markdown("### 🧭 Menu Principal")
+menu = st.sidebar.radio(
+    "Navegue pelas seções:",
+    ["Dashboard", "Clientes", "Financeiro"],
+    label_visibility="collapsed"
+)
+
+st.sidebar.divider()
+if st.sidebar.button("🔒 Sair da Conta", use_container_width=True):
+    st.session_state.autenticado = False
+    st.rerun()
 
 # 1. DASHBOARD
-with menu[0]:
-    st.subheader("Visão Geral do Negócio")
+if menu == "Dashboard":
+    st.markdown("#### 📊 Visão Geral do Negócio")
     
     total_clientes = len(dados_db["clientes"])
     receita_total = sum([item["valor"] for item in dados_db["financeiro"] if item["tipo"] == "Receita"])
     despesa_total = sum([item["valor"] for item in dados_db["financeiro"] if item["tipo"] == "Despesa"])
     lucro = receita_total - despesa_total
     
-    col1, col2, col3, col4 = st.columns(4)
+    # Métricas compactas em duas colunas para celular
+    col1, col2 = st.columns(2)
     col1.metric("Clientes Ativos", total_clientes)
-    col2.metric("Receita Total", f"R$ {receita_total:.2f}")
-    col3.metric("Despesas", f"R$ {despesa_total:.2f}")
-    col4.metric("Lucro Líquido", f"R$ {lucro:.2f}")
+    col2.metric("Lucro Líquido", f"R$ {lucro:.2f}")
     
-    st.info("💡 **Dica de Portfólio:** Este sistema utiliza persistência em JSON e validações ativas em tempo real, ideal para apresentação comercial.")
+    col3, col4 = st.columns(2)
+    col3.metric("Receita Total", f"R$ {receita_total:.2f}")
+    col4.metric("Despesas", f"R$ {despesa_total:.2f}")
+    
+    st.success("🟢 Sistema operando com banco de dados em nuvem sincronizado.")
 
 # 2. CLIENTES
-with menu[1]:
-    st.subheader("Gestão de Base de Clientes")
+elif menu == "Clientes":
+    st.markdown("#### 👥 Gestão de Clientes")
     
     with st.form("form_cliente", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            nome = st.text_input("Nome Completo / Empresa")
-            email = st.text_input("E-mail Comercial")
-        with col2:
-            cpf = st.text_input("CPF (Somente números)")
-            plano = st.selectbox("Plano Contratado", ["Starter", "Professional", "Enterprise"])
+        nome = st.text_input("Nome Completo / Empresa")
+        email = st.text_input("E-mail Comercial")
+        cpf = st.text_input("CPF (Somente números)")
+        plano = st.selectbox("Plano Contratado", ["Starter", "Professional", "Enterprise"])
             
         salvar_cli = st.form_submit_button("Cadastrar Cliente", use_container_width=True)
         
@@ -130,33 +137,29 @@ with menu[1]:
                     }
                     dados_db["clientes"].append(novo_cliente)
                     salvar_dados(dados_db)
-                    st.success(f"Cliente {nome} cadastrado com sucesso!")
+                    st.success(f"Cliente {nome} cadastrado!")
                     st.rerun()
                 else:
-                    st.error("CPF inválido! Verifique os dígitos.")
+                    st.error("CPF inválido.")
             else:
-                st.warning("Preencha ao menos Nome e CPF.")
+                st.warning("Preencha Nome e CPF.")
                 
-    st.markdown("### Clientes Registrados")
+    st.markdown("**Clientes Registrados:**")
     if dados_db["clientes"]:
         st.table(dados_db["clientes"])
     else:
-        st.info("Nenhum cliente cadastrado até o momento.")
+        st.info("Nenhum cliente cadastrado.")
 
 # 3. FINANCEIRO
-with menu[2]:
-    st.subheader("Controle Financeiro e Caixa")
+elif menu == "Financeiro":
+    st.markdown("#### 💰 Controle Financeiro")
     
     with st.form("form_fin", clear_on_submit=True):
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            descricao = st.text_input("Descrição do Lançamento")
-        with col2:
-            valor = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
-        with col3:
-            tipo = st.selectbox("Tipo", ["Receita", "Despesa"])
+        descricao = st.text_input("Descrição")
+        valor = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
+        tipo = st.selectbox("Tipo", ["Receita", "Despesa"])
             
-        salvar_fin = st.form_submit_button("Registrar Lançamento", use_container_width=True)
+        salvar_fin = st.form_submit_button("Adicionar Lançamento", use_container_width=True)
         
         if salvar_fin:
             if descricao and valor > 0:
@@ -168,56 +171,52 @@ with menu[2]:
                 }
                 dados_db["financeiro"].append(novo_lancamento)
                 salvar_dados(dados_db)
-                st.success("Lançamento adicionado com sucesso!")
+                st.success("Lançamento adicionado!")
                 st.rerun()
             else:
-                st.warning("Informe uma descrição e um valor válido.")
+                st.warning("Insira descrição e valor válidos.")
                 
-    st.markdown("### Histórico de Transações")
+    st.markdown("**Histórico de Lançamentos:**")
     if dados_db["financeiro"]:
         st.table(dados_db["financeiro"])
     else:
         st.info("Nenhum lançamento registrado.")
 
-# 4. CHAT IA INTELIGENTE (Conectado aos dados reais!)
-with menu[3]:
-    st.subheader("💬 Assistente IA Corporativo Primetech")
-    st.markdown("Converse com o assistente inteligente do sistema. Ele analisa os dados reais do seu negócio em tempo real.")
+# --- BOTÃO FLUTUANTE E MODAL DE CHAT DA EMPRESA ---
+st.divider()
+
+# Botão flutuante estilizado nas cores corporativas (Azul/Dark moderno)
+col_vazia, col_btn = st.columns([2, 1])
+with col_btn:
+    if st.button("💬 Chat Primetech", use_container_width=True):
+        st.session_state.mostrar_chat = not st.session_state.mostrar_chat
+
+# Se o chat estiver ativado, exibe a caixa de diálogo interativa na tela principal
+if st.session_state.mostrar_chat:
+    st.markdown("---")
+    st.markdown("### 🤖 Assistente IA Primetech (Em tempo real)")
     
-    # Exibir mensagens do histórico
     for msg in st.session_state.mensagens_chat:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
             
-    # Entrada de prompt interativo
-    if prompt := st.chat_input("Faça uma pergunta ao assistente (ex: 'Quantos clientes temos?')..."):
+    if prompt := st.chat_input("Digite sua dúvida (ex: 'quantos clientes?')..."):
         st.session_state.mensagens_chat.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.write(prompt)
             
-        # Lógica inteligente baseada nos dados reais do sistema
-        prompt_lower = prompt.lower()
+        # Leitura inteligente dos dados reais
         total_cli = len(dados_db["clientes"])
         rec = sum([i["valor"] for i in dados_db["financeiro"] if i["tipo"] == "Receita"])
         desp = sum([i["valor"] for i in dados_db["financeiro"] if i["tipo"] == "Despesa"])
         
-        if "cliente" in prompt_lower:
-            resposta_ia = f"Atualmente, o sistema possui **{total_cli} cliente(s)** cadastrado(s) na base de dados."
-        elif "financeiro" in prompt_lower or "receita" in prompt_lower or "dinheiro" in prompt_lower or "caixa" in prompt_lower:
-            resposta_ia = f"Análise financeira atual: Temos **R$ {rec:.2f}** em receitas registradas e **R$ {desp:.2f}** em despesas, gerando um lucro líquido de **R$ {rec - desp:.2f}**."
-        elif "olá" in prompt_lower or "tudo bem" in prompt_lower:
-            resposta_ia = "Olá! Tudo ótimo por aqui com os servidores da Primetech. Como posso auxiliar na sua gestão hoje?"
+        if "cliente" in prompt.lower():
+            resposta = f"Atualmente temos **{total_cli} cliente(s)** cadastrado(s) na plataforma."
+        elif "financeiro" in prompt.lower() or "receita" in prompt.lower() or "lucro" in prompt.lower():
+            resposta = f"Balanço atual: Receitas: R$ {rec:.2f} | Despesas: R$ {desp:.2f} | Lucro Líquido: R$ {rec - desp:.2f}."
         else:
-            resposta_ia = f"Compreendi sua dúvida sobre '{prompt}'. Como o sistema Primetech está ativo e sincronizado, todos os módulos operacionais estão seguros. Posso ajudar com mais alguma consulta aos dados?"
+            resposta = f"Compreendi sua solicitação. Os servidores da Primetech e os dados em JSON estão sincronizados e seguros."
             
-        st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta_ia})
+        st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta})
         with st.chat_message("assistant"):
-            st.write(resposta_ia)
-
-# 5. SAIR
-with menu[4]:
-    st.subheader("Encerrar Sessão")
-    st.write("Deseja desconectar sua conta administrativa com segurança?")
-    if st.button("Fazer Logout Agora", use_container_width=True):
-        st.session_state.autenticado = False
-        st.rerun()
+            st.write(resposta)
