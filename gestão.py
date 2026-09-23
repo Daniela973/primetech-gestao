@@ -58,7 +58,7 @@ if not st.session_state.autenticado:
             submit = st.form_submit_button("Entrar no Sistema", use_container_width=True)
             
             if submit:
-                if usuario == "admin" and senha == "primetchec":
+                if usuario == "daniela" and senha == "130790":
                     st.session_state.autenticado = True
                     st.success("Autenticado com sucesso! Carregando painel...")
                     st.rerun()
