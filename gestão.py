@@ -113,7 +113,7 @@ if not st.session_state["autenticado"]:
 
         if st.button("Entrar no Sistema", use_container_width=True):
             # 🔐 AQUI ESTÁ A SUA SENHA DE ADM EXPLICITAMENTE CONFIGURADA:
-            if usuario_input == "admin" and senha_input == "primetchec":
+            if usuario_input == "daniela" and senha_input == "130790":
                 st.session_state["autenticado"] = True
                 st.rerun()
             else:
