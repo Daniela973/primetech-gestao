@@ -3,19 +3,80 @@ import os
 import json
 from datetime import datetime
 
-# --- CONFIGURAÇÃO DA PÁGINA ---
+# --- CONFIGURAÇÃO DA PÁGINA E IDENTIDADE VISUAL ---
 st.set_page_config(
-    page_title="Prime Tech - Sistema de Gestão", 
+    page_title="Prime Tech | Sistema de Gestão", 
     page_icon="💻", 
     layout="wide"
 )
 
-# --- DIRETÓRIOS E FICHEIROS DE DADOS ---
+# Injeção de CSS customizado para atender rigorosamente à identidade visual:
+# ⬛ Fundo: preto/grafite (#121212)
+# 🔵 Ciano: títulos (#00ffff)
+# 🟣 Roxo: destaques e menus (#9c27b0 / #b19cd9)
+# ⚪ Branco: textos (#ffffff)
+st.markdown("""
+<style>
+    .stApp {
+        background-color: #121212;
+        color: #ffffff;
+    }
+    h1, h2, h3, h4 {
+        color: #00ffff !important;
+    }
+    p, label, span, div, .stMarkdown {
+        color: #ffffff !important;
+    }
+    [data-testid="stSidebar"] {
+        background-color: #1a1a1a;
+        border-right: 1px solid #333333;
+    }
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {
+        color: #b19cd9 !important;
+    }
+    div.stButton > button {
+        background-color: #9c27b0;
+        color: white;
+        border-radius: 6px;
+        border: none;
+        font-weight: bold;
+    }
+    div.stButton > button:hover {
+        background-color: #ba68c8;
+        color: white;
+    }
+    .success-box {
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #1b5e20;
+        color: #4caf50;
+    }
+    .warning-box {
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #f57f17;
+        color: #ffeb3b;
+    }
+    .error-box {
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #b71c1c;
+        color: #f44336;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# --- DIRETÓRIOS E PERSISTÊNCIA (JSON) ---
 PASTA_DADOS = "dados"
+PASTA_BACKUP = "backups"
+
 if not os.path.exists(PASTA_DADOS):
     os.makedirs(PASTA_DADOS)
+if not os.path.exists(PASTA_BACKUP):
+    os.makedirs(PASTA_BACKUP)
 
 ARQ_CLIENTES = os.path.join(PASTA_DADOS, "clientes.json")
+ARQ_ATENDIMENTOS = os.path.join(PASTA_DADOS, "atendimentos.json")
 ARQ_FINANCEIRO = os.path.join(PASTA_DADOS, "financeiro.json")
 
 def carregar_dados(caminho):
@@ -31,7 +92,7 @@ def salvar_dados(caminho, dados):
     with open(caminho, "w", encoding="utf-8") as f:
         json.dump(dados, f, ensure_ascii=False, indent=4)
 
-# --- VALIDAÇÃO DE CPF ---
+# --- VALIDAÇÕES (Módulo Validacoes) ---
 def validar_cpf(cpf):
     cpf = ''.join(filter(str.isdigit, cpf))
     if len(cpf) != 11 or cpf == cpf[0] * 11:
@@ -58,7 +119,7 @@ if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
 
 if not st.session_state.autenticado:
-    st.markdown("<h1 style='text-align: center; color: #00ffff;'>PRIME TECH</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #00ffff;'>PRIME TECH SOLUTIONS</h1>", unsafe_allow_html=True)
     st.markdown("<h3 style='text-align: center; color: #b19cd9;'>SISTEMA DE GESTÃO — ACESSO</h3>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -76,7 +137,17 @@ if not st.session_state.autenticado:
 st.sidebar.markdown("# 🚀 PRIME TECH")
 st.sidebar.markdown("### Sistema de Gestão")
 st.sidebar.markdown("---")
-menu = st.sidebar.radio("Navegação", ["📊 Dashboard", "👥 Clientes", "💰 Financeiro", "ℹ️ Sobre o Sistema"])
+
+menu = st.sidebar.radio("Navegação", [
+    "📊 Dashboard", 
+    "👥 Clientes", 
+    "🛠️ Atendimentos", 
+    "💰 Financeiro", 
+    "📊 Relatórios", 
+    "🔔 Avisos", 
+    "💾 Backup", 
+    "ℹ️ Sobre o Sistema"
+])
 
 if st.sidebar.button("🚪 Terminar Sessão"):
     st.session_state.autenticado = False
@@ -86,129 +157,207 @@ if st.sidebar.button("🚪 Terminar Sessão"):
 if menu == "📊 Dashboard":
     st.title("📊 Dashboard Executivo")
     clientes = carregar_dados(ARQ_CLIENTES)
+    atendimentos = carregar_dados(ARQ_ATENDIMENTOS)
     financeiro = carregar_dados(ARQ_FINANCEIRO)
     
     total_recebido = sum(f.get('valor_pago', 0) for f in financeiro)
     a_receber = sum(f.get('saldo_restante', 0) for f in financeiro)
     pendentes_qtd = len([f for f in financeiro if f.get('status') != "🟢 PAGO"])
     
-    col1, col2, col3 = st.columns(3)
-    col1.metric("👥 Clientes Registados", len(clientes))
-    col2.metric("💰 Total Recebido", f"R$ {total_recebido:.2f}")
-    col3.metric("🟡 A Receber", f"R$ {a_receber:.2f}")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("👥 Clientes", len(clientes))
+    col2.metric("🛠️ Atendimentos", len(atendimentos))
+    col3.metric("💰 Total Recebido", f"R$ {total_recebido:.2f}")
+    col4.metric("🟡 A Receber", f"R$ {a_receber:.2f}")
     
     st.markdown("---")
-    st.subheader("🔔 Avisos do Sistema")
+    st.subheader("🔔 Avisos Rápidos")
     if pendentes_qtd > 0:
         st.warning(f"⚠️ Existem {pendentes_qtd} contas com pagamento pendente ou parcial.")
     else:
         st.success("✔ Nenhuma pendência financeira crítica no momento.")
 
-# --- 2. CLIENTES ---
+# --- 2. CLIENTES (CRUD Completo e Ficha) ---
 elif menu == "👥 Clientes":
     st.title("👥 Gestão de Clientes")
-    aba1, aba2 = st.tabs(["➕ Cadastrar Novo Cliente", "🔍 Pesquisar / Listar"])
+    aba1, aba2, aba3 = st.tabs(["➕ Cadastrar Novo", "🔍 Pesquisar & Listar", "📇 Ficha Completa"])
     
     clientes = carregar_dados(ARQ_CLIENTES)
     
     with aba1:
         st.subheader("Registo de Novo Cliente")
         with st.form("form_cliente"):
-            nome = st.text_input("Nome Completo")
-            cpf_raw = st.text_input("CPF (Apenas números)")
-            telefone = st.text_input("Telefone / WhatsApp")
+            nome = st.text_input("Nome Completo *")
+            cpf_raw = st.text_input("CPF (Apenas números ou formatado) *")
+            nascimento = st.text_input("Data de Nascimento (DD/MM/AAAA)")
+            telefone = st.text_input("Telefone / WhatsApp *")
             email = st.text_input("E-mail")
-            cidade = st.text_input("Cidade / Estado")
+            endereco = st.text_input("Endereço e Número")
+            cidade = st.text_input("Cidade / Estado *")
+            observacoes = st.text_area("Observações")
             
             submitted = st.form_submit_button("Salvar Cliente")
             if submitted:
-                if not nome.strip():
-                    st.error("O nome completo é obrigatório.")
+                if not nome.strip() or not cpf_raw.strip():
+                    st.error("❌ Nome e CPF são obrigatórios.")
                 elif not validar_cpf(cpf_raw):
-                    st.error("❌ CPF inválido! Verifique os números.")
+                    st.error("❌ CPF inválido! Verifique os dígitos informados.")
                 else:
                     cpf_formatado = formatar_cpf(cpf_raw)
                     if any(c['cpf'] == cpf_formatado for c in clientes):
-                        st.warning("⚠️ Este CPF já pertence a outro cliente cadastrado.")
+                        cli_existente = next(c for c in clientes if c['cpf'] == cpf_formatado)
+                        st.warning(f"⚠️ Este CPF já pertence ao cliente: {cli_existente['nome']}")
                     else:
                         novo_c = {
                             "id": len(clientes) + 1,
                             "nome": nome.strip(),
                             "cpf": cpf_formatado,
+                            "nascimento": nascimento.strip(),
                             "telefone": telefone.strip(),
                             "email": email.strip(),
+                            "endereco": endereco.strip(),
                             "cidade": cidade.strip(),
-                            "data_cadastro": datetime.now().strftime("%d/%m/%Y")
+                            "observacoes": observacoes.strip(),
+                            "data_cadastro": datetime.now().strftime("%d/%m/%Y"),
+                            "status": "🟢 ATIVO"
                         }
                         clientes.append(novo_c)
                         salvar_dados(ARQ_CLIENTES, clientes)
                         st.success("✔ Cliente cadastrado com sucesso!")
 
     with aba2:
-        st.subheader("Pesquisa de Clientes")
-        termo = st.text_input("Digite parte do nome ou CPF para pesquisar:").lower().strip()
-        
-        encontrados = [c for c in clientes if termo in c['nome'].lower() or termo in c['cpf']] if termo else clientes
+        st.subheader("Pesquisa Inteligente de Clientes")
+        termo = st.text_input("Digite parte do nome, CPF ou telefone:").lower().strip()
+        encontrados = [c for c in clientes if termo in c['nome'].lower() or termo in c['cpf'] or termo in c['telefone']] if termo else clientes
         
         if encontrados:
-            st.write(f"Mostrando {len(encontrados)} cliente(s):")
+            st.write(f"Resultados encontrados ({len(encontrados)}):")
             for c in encontrados:
-                st.info(f"**{c['nome']}**\n\n🆔 CPF: `{c['cpf']}` | 📞 Tel: {c['telefone']} | 📧 E-mail: {c['email']} | 🏙️ Cidade: {c['cidade']}")
+                st.info(f"**ID: {c['id']}** | **{c['nome']}** | CPF: `{c['cpf']}` | Tel: {c['telefone']} | Cidade: {c['cidade']}")
         else:
             st.warning("Nenhum cliente encontrado.")
 
-# --- 3. FINANCEIRO ---
-elif menu == "💰 Financeiro":
-    st.title("💰 Controlo Financeiro")
-    aba_fin1, aba_fin2 = st.tabs(["➕ Registar Conta / Serviço", "💵 Listar e Dar Baixa"])
-    
-    financeiro = carregar_dados(ARQ_FINANCEIRO)
-    
-    with aba_fin1:
-        st.subheader("Novo Registo Financeiro")
-        with st.form("form_fin"):
-            cli = st.text_input("Nome do Cliente")
-            desc = st.text_input("Descrição do Serviço ou Produto")
-            val = st.number_input("Valor Total (R$)", min_value=0.0, format="%.2f")
+    with aba3:
+        st.subheader("Ficha Completa e Gestão do Cliente")
+        if clientes:
+            cliente_nomes = [f"{c['id']} - {c['nome']} ({c['cpf']})" for c in clientes]
+            escolha = st.selectbox("Selecione o Cliente:", cliente_nomes)
+            cli_id = int(escolha.split(" - ")[0])
+            cli_obj = next(c for c in clientes if c['id'] == cli_id)
             
-            sub_fin = st.form_submit_button("Registar Conta")
-            if sub_fin:
-                if not cli or not desc or val <= 0:
-                    st.error("Preencha todos os campos corretamente.")
-                else:
-                    reg = {
-                        "id": len(financeiro) + 1,
-                        "cliente": cli.strip(),
-                        "descricao": desc.strip(),
-                        "valor_total": val,
-                        "valor_pago": 0.0,
-                        "saldo_restante": val,
-                        "status": "🔴 PENDENTE",
+            financeiro = carregar_dados(ARQ_FINANCEIRO)
+            compras_cli = [f for f in financeiro if f['cliente'].lower() == cli_obj['nome'].lower()]
+            total_comprado = sum(f['valor_total'] for f in compras_cli)
+            total_pago = sum(f['valor_pago'] for f in compras_cli)
+            debito = sum(f['saldo_restante'] for f in compras_cli)
+            
+            st.markdown(f"""
+            ### ╔════════════════════════════════════════╗
+            ### ║ FICHA DO CLIENTE: {cli_obj['nome']}
+            ### ╠════════════════════════════════════════╣
+            * **CPF:** `{cli_obj['cpf']}`
+            * **Telefone:** {cli_obj['telefone']}
+            * **E-mail:** {cli_obj['email']}
+            * **Cidade:** {cli_obj['cidade']}
+            * **Data de Cadastro:** {cli_obj['data_cadastro']}
+            * **Total Comprado:** R$ {total_comprado:.2f}
+            * **Total Pago:** R$ {total_pago:.2f}
+            * **Débito Atual:** R$ {debito:.2f}
+            ### ╚════════════════════════════════════════╝
+            """)
+            
+            if st.button("Excluir Cliente"):
+                clientes = [c for c in clientes if c['id'] != cli_id]
+                salvar_dados(ARQ_CLIENTES, clientes)
+                st.success("✔ Cliente excluído com sucesso!")
+                st.rerun()
+        else:
+            st.info("Nenhum cliente registado para exibir ficha.")
+
+# --- 3. ATENDIMENTOS ---
+elif menu == "🛠️ Atendimentos":
+    st.title("🛠️ Gestão de Atendimentos")
+    atendimentos = carregar_dados(ARQ_ATENDIMENTOS)
+    clientes = carregar_dados(ARQ_CLIENTES)
+    
+    aba_at1, aba_at2 = st.tabs(["➕ Registar Atendimento", "📋 Listar Histórico"])
+    
+    with aba_at1:
+        if not clientes:
+            st.warning("Cadastre clientes primeiro para vincular atendimentos.")
+        else:
+            with st.form("form_atend"):
+                cli_nome = st.selectbox("Cliente", [c['nome'] for c in clientes])
+                servico = st.text_input("Serviço ou Produto")
+                descricao = st.text_area("Descrição detalhada")
+                valor = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
+                pagamento_forma = st.selectbox("Forma de Pagamento", ["Pix", "Cartão de Crédito", "Dinheiro", "Boleto", "A Prazo"])
+                status_atend = st.selectbox("Status", ["Concluído", "Em Andamento", "Agendado"])
+                
+                if st.form_submit_button("Registar Atendimento"):
+                    novo_at = {
+                        "id": len(atendimentos) + 1,
+                        "cliente": cli_nome,
+                        "servico": servico.strip(),
+                        "descricao": descricao.strip(),
+                        "valor": valor,
+                        "forma_pagamento": pagamento_forma,
+                        "status": status_atend,
                         "data": datetime.now().strftime("%d/%m/%Y")
                     }
-                    financeiro.append(reg)
+                    atendimentos.append(novo_at)
+                    salvar_dados(ARQ_ATENDIMENTOS, atendimentos)
+                    
+                    # Relacionamento automático com o Financeiro
+                    financeiro = carregar_dados(ARQ_FINANCEIRO)
+                    novo_fin = {
+                        "id": len(financeiro) + 1,
+                        "cliente": cli_nome,
+                        "descricao": f"Atendimento #{novo_at['id']} - {servico}",
+                        "valor_total": valor,
+                        "valor_pago": valor if pagamento_forma != "A Prazo" else 0.0,
+                        "saldo_restante": 0.0 if pagamento_forma != "A Prazo" else valor,
+                        "status": "🟢 PAGO" if pagamento_forma != "A Prazo" else "🔴 PENDENTE",
+                        "data": datetime.now().strftime("%d/%m/%Y")
+                    }
+                    financeiro.append(novo_fin)
                     salvar_dados(ARQ_FINANCEIRO, financeiro)
-                    st.success("✔ Registo financeiro criado com sucesso!")
+                    st.success("✔ Atendimento registado e integrado ao financeiro com sucesso!")
 
-    with aba_fin2:
-        st.subheader("Contas e Status de Pagamento")
+    with aba_at2:
+        st.subheader("Histórico de Atendimentos")
+        if atendimentos:
+            for at in atendimentos:
+                st.info(f"**Atendimento #{at['id']}** | Cliente: **{at['cliente']}** | Serviço: {at['servico']} | Valor: R$ {at['valor']:.2f} | Data: {at['data']} | Status: {at['status']}")
+        else:
+            st.info("Nenhum atendimento registado.")
+
+# --- 4. FINANCEIRO E PAGAMENTOS ---
+elif menu == "💰 Financeiro":
+    st.title("💰 Controlo Financeiro & Pagamentos")
+    financeiro = carregar_dados(ARQ_FINANCEIRO)
+    
+    aba_fin1, aba_fin2 = st.tabs(["💵 Contas e Baixas", "➕ Lançamento Manual"])
+    
+    with aba_fin1:
+        st.subheader("Contas a Receber e Status")
         if financeiro:
             for f in financeiro:
                 st.markdown(f"**ID: {f['id']}** | **{f['cliente']}** — {f['descricao']} | Total: R$ {f['valor_total']:.2f} | Pago: R$ {f['valor_pago']:.2f} | Restante: R$ {f['saldo_restante']:.2f} | **{f['status']}**")
             
             st.markdown("---")
-            st.subheader("Registar Baixa / Pagamento Parcial ou Total")
-            reg_id = st.number_input("Digite o ID do registo:", min_value=1, step=1)
-            val_pag = st.number_input("Valor a pagar agora (R$):", min_value=0.0, format="%.2f")
+            st.subheader("Registar Pagamento (Baixa Parcial ou Total)")
+            reg_id = st.number_input("Digite o ID da conta:", min_value=1, step=1)
+            valor_pagamento = st.number_input("Valor pago agora (R$):", min_value=0.0, format="%.2f")
             
-            if st.button("Confirmar Pagamento"):
+            if st.button("Confirmar Baixa de Pagamento"):
                 alvo = next((item for item in financeiro if item['id'] == reg_id), None)
                 if not alvo:
-                    st.error("❌ Registo não encontrado.")
-                elif val_pag > alvo['saldo_restante']:
-                    st.error("❌ O valor do pagamento não pode ser maior que o saldo restante.")
+                    st.error("❌ Registo financeiro não encontrado.")
+                elif valor_pagamento > alvo['saldo_restante']:
+                    st.error("❌ O valor do pagamento excede o saldo restante em dívida.")
                 else:
-                    alvo['valor_pago'] += val_pag
+                    alvo['valor_pago'] += valor_pagamento
                     alvo['saldo_restante'] = alvo['valor_total'] - alvo['valor_pago']
                     
                     if alvo['saldo_restante'] == 0:
@@ -219,18 +368,120 @@ elif menu == "💰 Financeiro":
                         alvo['status'] = "🔴 PENDENTE"
                         
                     salvar_dados(ARQ_FINANCEIRO, financeiro)
-                    st.success(f"✔ Pagamento registrado com sucesso! Novo saldo: R$ {alvo['saldo_restante']:.2f} ({alvo['status']})")
+                    st.success(f"✔ Pagamento registado! Restante atualizado: R$ {alvo['saldo_restante']:.2f} ({alvo['status']})")
                     st.rerun()
         else:
             st.info("Nenhum registo financeiro encontrado.")
 
-# --- 4. SOBRE O SISTEMA ---
+    with aba_fin2:
+        st.subheader("Novo Lançamento Financeiro Manual")
+        with st.form("form_fin_manual"):
+            cli = st.text_input("Nome do Cliente")
+            desc = st.text_input("Descrição")
+            val = st.number_input("Valor Total (R$)", min_value=0.0, format="%.2f")
+            if st.form_submit_button("Adicionar Lançamento"):
+                if not cli or val <= 0:
+                    st.error("Preencha os campos corretamente.")
+                else:
+                    novo_f = {
+                        "id": len(financeiro) + 1,
+                        "cliente": cli.strip(),
+                        "descricao": desc.strip(),
+                        "valor_total": val,
+                        "valor_pago": 0.0,
+                        "saldo_restante": val,
+                        "status": "🔴 PENDENTE",
+                        "data": datetime.now().strftime("%d/%m/%Y")
+                    }
+                    financeiro.append(novo_f)
+                    salvar_dados(ARQ_FINANCEIRO, financeiro)
+                    st.success("✔ Registo financeiro criado com sucesso!")
+
+# --- 5. RELATÓRIOS ---
+elif menu == "📊 Relatórios":
+    st.title("📊 Relatórios Gerenciais")
+    financeiro = carregar_dados(ARQ_FINANCEIRO)
+    clientes = carregar_dados(ARQ_CLIENTES)
+    
+    tipo_rel = st.selectbox("Selecione o Relatório", [
+        "Relatório Financeiro Geral", 
+        "Clientes Devedores (Inadimplentes)", 
+        "Listagem Geral de Clientes"
+    ])
+    
+    if tipo_rel == "Relatório Financeiro Geral":
+        st.subheader("RELATÓRIO FINANCEIRO")
+        total_geral = sum(f['valor_total'] for f in financeiro)
+        total_recebido = sum(f['valor_pago'] for f in financeiro)
+        total_aberto = sum(f['saldo_restante'] for f in financeiro)
+        st.info(f"💰 Faturamento Total: R$ {total_geral:.2f}\n\n🟢 Total Recebido: R$ {total_recebido:.2f}\n\n🔴 Em Aberto: R$ {total_aberto:.2f}")
+        
+    elif tipo_rel == "Clientes Devedores (Inadimplentes)":
+        st.subheader("CLIENTES COM DÉBITOS PENDENTES")
+        devedores = [f for f in financeiro if f['saldo_restante'] > 0]
+        if devedores:
+            for d in devedores:
+                st.warning(f"⚠️ **{d['cliente']}** — Dívida: R$ {d['saldo_restante']:.2f} ({d['descricao']})")
+        else:
+            st.success("✔ Nenhum cliente inadimplente no momento.")
+            
+    elif tipo_rel == "Listagem Geral de Clientes":
+        st.subheader("LISTA DE CLIENTES CADASTRADOS")
+        if clientes:
+            for c in clientes:
+                st.write(f"- **{c['nome']}** | CPF: `{c['cpf']}` | Tel: {c['telefone']}")
+        else:
+            st.info("Nenhum cliente cadastrado.")
+
+# --- 6. AVISOS AUTOMÁTICOS ---
+elif menu == "🔔 Avisos":
+    st.title("🔔 Avisos Automáticos do Sistema")
+    financeiro = carregar_dados(ARQ_FINANCEIRO)
+    atendimentos = carregar_dados(ARQ_ATENDIMENTOS)
+    
+    pendentes = [f for f in financeiro if f['status'] != "🟢 PAGO"]
+    
+    st.markdown("### 🔔 Central de Alertas")
+    if pendentes:
+        st.warning(f"⚠️ Existem {len(pendentes)} contas com pagamento pendente ou parcial.")
+    else:
+        st.success("✔ Nenhuma pendência financeira.")
+        
+    st.info(f"📅 Total de atendimentos registados no sistema: {len(atendimentos)}")
+
+# --- 7. BACKUP ---
+elif menu == "💾 Backup":
+    st.title("💾 Gestão de Backup e Restauração")
+    if st.button("Criar Novo Backup dos Dados"):
+        data_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        caminho_bkp = os.path.join(PASTA_BACKUP, f"backup_{data_str}.json")
+        
+        dados_geral = {
+            "clientes": carregar_dados(ARQ_CLIENTES),
+            "atendimentos": carregar_dados(ARQ_ATENDIMENTOS),
+            "financeiro": carregar_dados(ARQ_FINANCEIRO)
+        }
+        
+        with open(caminho_bkp, "w", encoding="utf-8") as f:
+            json.dump(dados_geral, f, ensure_ascii=False, indent=4)
+        st.success(f"✔ Backup criado com sucesso na pasta backups/ ({caminho_bkp})!")
+        
+    st.subheader("Histórico de Backups Disponíveis")
+    if os.path.exists(PASTA_BACKUP):
+        arquivos_bkp = os.listdir(PASTA_BACKUP)
+        if arquivos_bkp:
+            for bkp in arquivos_bkp:
+                st.text(f"📁 {bkp}")
+        else:
+            st.info("Nenhum backup encontrado.")
+
+# --- 8. SOBRE O SISTEMA ---
 elif menu == "ℹ️ Sobre o Sistema":
     st.title("ℹ️ Sobre o Sistema")
     st.markdown("""
-    ### 🌟 PRIME TECH — SISTEMA DE GESTÃO
+    ### 🌟 PRIME TECH SOLUTIONS — SISTEMA DE GESTÃO
     * **Versão:** 1.0.0
     * **Desenvolvida por:** Daniela Reis
     * **Tecnologia:** Python, Streamlit & JSON Storage
-    * **Propósito:** Aplicação comercial projetada para automação de cadastros de clientes, controlo de fluxo de caixa, validações algorítmicas e relatórios gerenciais em tempo real.
+    * **Propósito:** Aplicação comercial projetada para automação de cadastros de clientes, controlo de fluxo de caixa, validações algorítmicas, histórico, relatórios e mecanismos de backup.
     """)
