@@ -10,16 +10,13 @@ st.set_page_config(
     layout="wide"
 )
 
-# Injeção de CSS customizado com marca d'água de fundo e identidade Prime Tech
+# Injeção de CSS customizado mantendo o fundo grafite e o padrão Prime Tech
 st.markdown("""
 <style>
-    /* Fundo geral preto/grafite do site com marca d'água suave Prime Tech */
+    /* Fundo geral preto/grafite do site */
     .stApp {
         background-color: #0b0c10;
         color: #ffffff;
-        background-image: linear-gradient(rgba(11, 12, 16, 0.95), rgba(11, 12, 16, 0.95)), 
-                          url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='300' opacity='0.03'><text x='50%' y='50%' font-size='36' font-family='Arial, sans-serif' font-weight='bold' fill='%2300ffff' text-anchor='middle' dominant-baseline='middle' transform='rotate(-25 300 150)'>PRIME TECH SOLUTIONS</text></svg>");
-        background-repeat: repeat;
     }
     h1, h2, h3, h4 {
         color: #00ffff !important;
@@ -31,9 +28,6 @@ st.markdown("""
     [data-testid="stSidebar"] {
         background-color: #12141a;
         border-right: 1px solid #1f2833;
-    }
-    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {
-        color: #00ffff !important;
     }
     /* Botões principais no Azul Ciano da Prime Tech */
     div.stButton > button {
@@ -110,7 +104,14 @@ if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
 
 if not st.session_state.autenticado:
-    st.markdown("<h1 style='text-align: center; color: #00ffff;'>PRIME TECH SOLUTIONS</h1>", unsafe_allow_html=True)
+    # Exibir a logo também na tela de login se o ficheiro existir, ou título estilizado
+    if os.path.exists("logo.png"):
+        col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
+        with col_l2:
+            st.image("logo.png", use_container_width=True)
+    else:
+        st.markdown("<h1 style='text-align: center; color: #00ffff;'>PRIME TECH SOLUTIONS</h1>", unsafe_allow_html=True)
+    
     st.markdown("<h3 style='text-align: center; color: #00d2ff;'>SISTEMA DE GESTÃO — ACESSO</h3>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
@@ -124,9 +125,13 @@ if not st.session_state.autenticado:
                 st.error("❌ Senha incorreta!")
     st.stop()
 
-# --- MENU LATERAL (SIDEBAR) ---
-st.sidebar.markdown("# 🚀 PRIME TECH")
-st.sidebar.markdown("### Sistema de Gestão")
+# --- MENU LATERAL (SIDEBAR COM A SUA LOGO) ---
+if os.path.exists("logo.png"):
+    st.sidebar.image("logo.png", use_container_width=True)
+else:
+    st.sidebar.markdown("# 🚀 PRIME TECH")
+    st.sidebar.markdown("### Sistema de Gestão")
+
 st.sidebar.markdown("---")
 
 menu = st.sidebar.radio("Navegação", [
