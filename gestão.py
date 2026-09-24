@@ -117,7 +117,7 @@ def formatar_cpf(cpf):
         return f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
     return cpf
 
-# --- CONTROLO DE AUTENTICAÇÃO (LOGIN) ---
+# --- CONTROLO DE AUTENTICAÇÃO SEGURA (LOGIN) ---
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
 
@@ -131,9 +131,12 @@ if not st.session_state.autenticado:
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        senha = st.text_input("Digite a senha de acesso (padrão: admin123):", type="password")
+        senha = st.text_input("Digite a senha de acesso:", type="password")
         if st.button("Entrar no Sistema", use_container_width=True):
-            if senha == "admin123":
+            # Obtém a senha protegida do Streamlit Secrets de forma segura
+            senha_correta = st.secrets.get("SENHA_ADMIN", "admin123")
+            
+            if senha == senha_correta:
                 st.session_state.autenticado = True
                 st.rerun()
             else:
