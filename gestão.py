@@ -10,10 +10,9 @@ st.set_page_config(
     layout="wide"
 )
 
-# Injeção de CSS customizado mantendo o fundo grafite e o padrão Prime Tech
+# Injeção de CSS customizado com o design exato da Prime Tech
 st.markdown("""
 <style>
-    /* Fundo geral preto/grafite do site */
     .stApp {
         background-color: #0b0c10;
         color: #ffffff;
@@ -24,12 +23,10 @@ st.markdown("""
     p, label, span, div, .stMarkdown {
         color: #ffffff !important;
     }
-    /* Barra lateral (Sidebar) */
     [data-testid="stSidebar"] {
         background-color: #12141a;
         border-right: 1px solid #1f2833;
     }
-    /* Botões principais no Azul Ciano da Prime Tech */
     div.stButton > button {
         background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
         color: #0b0c10;
@@ -42,11 +39,32 @@ st.markdown("""
         background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%);
         color: #ffffff;
     }
-    /* Caixas de formulário e inputs com fundo cinza escuro */
     input, textarea, select {
         background-color: #1f2833 !important;
         color: #ffffff !important;
         border: 1px solid #2c353d !important;
+    }
+    .logo-container {
+        text-align: center;
+        padding: 10px;
+        background: #0b0c10;
+        border-radius: 10px;
+        border: 1px solid #1f2833;
+        margin-bottom: 15px;
+    }
+    .logo-titulo {
+        font-size: 22px;
+        font-weight: 900;
+        color: #00ffff;
+        letter-spacing: 2px;
+        margin: 0;
+        text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    }
+    .logo-sub {
+        font-size: 11px;
+        color: #ffffff;
+        letter-spacing: 1px;
+        margin-top: 2px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -104,15 +122,12 @@ if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
 
 if not st.session_state.autenticado:
-    # Exibir a logo também na tela de login se o ficheiro existir, ou título estilizado
-    if os.path.exists("logo.png"):
-        col_l1, col_l2, col_l3 = st.columns([1, 2, 1])
-        with col_l2:
-            st.image("logo.png", use_container_width=True)
-    else:
-        st.markdown("<h1 style='text-align: center; color: #00ffff;'>PRIME TECH SOLUTIONS</h1>", unsafe_allow_html=True)
-    
-    st.markdown("<h3 style='text-align: center; color: #00d2ff;'>SISTEMA DE GESTÃO — ACESSO</h3>", unsafe_allow_html=True)
+    st.markdown("""
+        <div style="text-align: center; padding: 20px;">
+            <div style="font-size: 32px; font-weight: 900; color: #00ffff; text-shadow: 0 0 15px rgba(0, 255, 255, 0.4);">PRIME TECH</div>
+            <div style="font-size: 14px; color: #ffffff; letter-spacing: 2px;">SISTEMA DE GESTÃO</div>
+        </div>
+    """, unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -125,14 +140,14 @@ if not st.session_state.autenticado:
                 st.error("❌ Senha incorreta!")
     st.stop()
 
-# --- MENU LATERAL (SIDEBAR COM A SUA LOGO) ---
-if os.path.exists("logo.png"):
-    st.sidebar.image("logo.png", use_container_width=True)
-else:
-    st.sidebar.markdown("# 🚀 PRIME TECH")
-    st.sidebar.markdown("### Sistema de Gestão")
-
-st.sidebar.markdown("---")
+# --- MENU LATERAL (SIDEBAR COM O VISUAL DA SUA LOGO) ---
+st.sidebar.markdown("""
+    <div class="logo-container">
+        <div class="logo-titulo">PRIME TECH</div>
+        <div style="background: linear-gradient(90deg, transparent, #00ffff, transparent); height: 2px; margin: 5px 0;"></div>
+        <div class="logo-sub">SISTEMA DE GESTÃO</div>
+    </div>
+""", unsafe_allow_html=True)
 
 menu = st.sidebar.radio("Navegação", [
     "📊 Dashboard", 
