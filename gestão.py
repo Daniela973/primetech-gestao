@@ -10,16 +10,16 @@ st.set_page_config(
     layout="wide"
 )
 
-# Injeção de CSS customizado para atender rigorosamente à identidade visual:
-# ⬛ Fundo: preto/grafite (#121212)
-# 🔵 Ciano: títulos (#00ffff)
-# 🟣 Roxo: destaques e menus (#9c27b0 / #b19cd9)
-# ⚪ Branco: textos (#ffffff)
+# Injeção de CSS customizado com marca d'água de fundo e identidade Prime Tech
 st.markdown("""
 <style>
+    /* Fundo geral preto/grafite do site com marca d'água suave Prime Tech */
     .stApp {
-        background-color: #121212;
+        background-color: #0b0c10;
         color: #ffffff;
+        background-image: linear-gradient(rgba(11, 12, 16, 0.95), rgba(11, 12, 16, 0.95)), 
+                          url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='300' opacity='0.03'><text x='50%' y='50%' font-size='36' font-family='Arial, sans-serif' font-weight='bold' fill='%2300ffff' text-anchor='middle' dominant-baseline='middle' transform='rotate(-25 300 150)'>PRIME TECH SOLUTIONS</text></svg>");
+        background-repeat: repeat;
     }
     h1, h2, h3, h4 {
         color: #00ffff !important;
@@ -27,41 +27,32 @@ st.markdown("""
     p, label, span, div, .stMarkdown {
         color: #ffffff !important;
     }
+    /* Barra lateral (Sidebar) */
     [data-testid="stSidebar"] {
-        background-color: #1a1a1a;
-        border-right: 1px solid #333333;
+        background-color: #12141a;
+        border-right: 1px solid #1f2833;
     }
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {
-        color: #b19cd9 !important;
+        color: #00ffff !important;
     }
+    /* Botões principais no Azul Ciano da Prime Tech */
     div.stButton > button {
-        background-color: #9c27b0;
-        color: white;
-        border-radius: 6px;
+        background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+        color: #0b0c10;
+        border-radius: 8px;
         border: none;
         font-weight: bold;
+        box-shadow: 0 4px 10px rgba(0, 210, 255, 0.3);
     }
     div.stButton > button:hover {
-        background-color: #ba68c8;
-        color: white;
+        background: linear-gradient(135deg, #3a7bd5 0%, #00d2ff 100%);
+        color: #ffffff;
     }
-    .success-box {
-        padding: 10px;
-        border-radius: 5px;
-        background-color: #1b5e20;
-        color: #4caf50;
-    }
-    .warning-box {
-        padding: 10px;
-        border-radius: 5px;
-        background-color: #f57f17;
-        color: #ffeb3b;
-    }
-    .error-box {
-        padding: 10px;
-        border-radius: 5px;
-        background-color: #b71c1c;
-        color: #f44336;
+    /* Caixas de formulário e inputs com fundo cinza escuro */
+    input, textarea, select {
+        background-color: #1f2833 !important;
+        color: #ffffff !important;
+        border: 1px solid #2c353d !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -92,7 +83,7 @@ def salvar_dados(caminho, dados):
     with open(caminho, "w", encoding="utf-8") as f:
         json.dump(dados, f, ensure_ascii=False, indent=4)
 
-# --- VALIDAÇÕES (Módulo Validacoes) ---
+# --- VALIDAÇÕES ---
 def validar_cpf(cpf):
     cpf = ''.join(filter(str.isdigit, cpf))
     if len(cpf) != 11 or cpf == cpf[0] * 11:
@@ -120,7 +111,7 @@ if "autenticado" not in st.session_state:
 
 if not st.session_state.autenticado:
     st.markdown("<h1 style='text-align: center; color: #00ffff;'>PRIME TECH SOLUTIONS</h1>", unsafe_allow_html=True)
-    st.markdown("<h3 style='text-align: center; color: #b19cd9;'>SISTEMA DE GESTÃO — ACESSO</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align: center; color: #00d2ff;'>SISTEMA DE GESTÃO — ACESSO</h3>", unsafe_allow_html=True)
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -177,7 +168,7 @@ if menu == "📊 Dashboard":
     else:
         st.success("✔ Nenhuma pendência financeira crítica no momento.")
 
-# --- 2. CLIENTES (CRUD Completo e Ficha) ---
+# --- 2. CLIENTES ---
 elif menu == "👥 Clientes":
     st.title("👥 Gestão de Clientes")
     aba1, aba2, aba3 = st.tabs(["➕ Cadastrar Novo", "🔍 Pesquisar & Listar", "📇 Ficha Completa"])
@@ -308,7 +299,6 @@ elif menu == "🛠️ Atendimentos":
                     atendimentos.append(novo_at)
                     salvar_dados(ARQ_ATENDIMENTOS, atendimentos)
                     
-                    # Relacionamento automático com o Financeiro
                     financeiro = carregar_dados(ARQ_FINANCEIRO)
                     novo_fin = {
                         "id": len(financeiro) + 1,
@@ -332,7 +322,7 @@ elif menu == "🛠️ Atendimentos":
         else:
             st.info("Nenhum atendimento registado.")
 
-# --- 4. FINANCEIRO E PAGAMENTOS ---
+# --- 4. FINANCEIRO ---
 elif menu == "💰 Financeiro":
     st.title("💰 Controlo Financeiro & Pagamentos")
     financeiro = carregar_dados(ARQ_FINANCEIRO)
@@ -433,7 +423,7 @@ elif menu == "📊 Relatórios":
         else:
             st.info("Nenhum cliente cadastrado.")
 
-# --- 6. AVISOS AUTOMÁTICOS ---
+# --- 6. AVISOS ---
 elif menu == "🔔 Avisos":
     st.title("🔔 Avisos Automáticos do Sistema")
     financeiro = carregar_dados(ARQ_FINANCEIRO)
