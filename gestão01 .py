@@ -92,8 +92,11 @@ def carregar_dados(caminho):
     return []
 
 def salvar_dados(caminho, dados):
-    with open(caminho, "w", encoding="utf-8") as f:
-        json.dump(dados, f, ensure_ascii=False, indent=4)
+    try:
+        with open(caminho, "w", encoding="utf-8") as f:
+            json.dump(dados, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        st.error(f"❌ Erro crítico ao gravar dados em {caminho}: {e}")
 
 # --- VALIDAÇÕES ---
 def validar_cpf(cpf):
@@ -117,7 +120,7 @@ def formatar_cpf(cpf):
         return f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
     return cpf
 
-# --- CONTROLO DE AUTENTICAÇÃO SEGURA (LOGIN) ---
+# --- CONTROLO DE AUTENTICAÇÃO SEGURA (SEM FALLBACK INSEGURO) ---
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
 
@@ -131,19 +134,21 @@ if not st.session_state.autenticado:
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        # Verificação rigorosa de segredos (sem senhas hardcoded)
+        if "SENHA_ADMIN" not in st.secrets:
+            st.error("❌ ERRO DE CONFIGURAÇÃO: A chave 'SENHA_ADMIN' não está configurada nos Secrets do Streamlit.")
+            st.stop()
+            
         senha = st.text_input("Digite a senha de acesso:", type="password")
         if st.button("Entrar no Sistema", use_container_width=True):
-            # Obtém a senha protegida do Streamlit Secrets de forma segura
-            senha_correta = st.secrets.get("SENHA_ADMIN", "admin123")
-            
-            if senha == senha_correta:
+            if senha == st.secrets["SENHA_ADMIN"]:
                 st.session_state.autenticado = True
                 st.rerun()
             else:
                 st.error("❌ Senha incorreta!")
     st.stop()
 
-# --- MENU LATERAL (SIDEBAR COM O VISUAL DA SUA LOGO) ---
+# --- MENU LATERAL (SIDEBAR COM O VISUAL DA LOGO) ---
 st.sidebar.markdown("""
     <div class="logo-container">
         <div class="logo-titulo">PRIME TECH</div>
@@ -222,8 +227,10 @@ elif menu == "👥 Clientes":
                         cli_existente = next(c for c in clientes if c['cpf'] == cpf_formatado)
                         st.warning(f"⚠️ Este CPF já pertence ao cliente: {cli_existente['nome']}")
                     else:
+                        # Geração de ID segura baseada no maior ID existente (evita duplicatas)
+                        novo_id = max([c.get('id', 0) for c in clientes], default=0) + 1
                         novo_c = {
-                            "id": len(clientes) + 1,
+                            "id": novo_id,
                             "nome": nome.strip(),
                             "cpf": cpf_formatado,
                             "nascimento": nascimento.strip(),
@@ -260,7 +267,8 @@ elif menu == "👥 Clientes":
             cli_obj = next(c for c in clientes if c['id'] == cli_id)
             
             financeiro = carregar_dados(ARQ_FINANCEIRO)
-            compras_cli = [f for f in financeiro if f['cliente'].lower() == cli_obj['nome'].lower()]
+            # Relacionamento seguro por ID ou nome correspondente
+            compras_cli = [f for f in financeiro if f.get('cliente_id') == cli_id or f['cliente'].lower() == cli_obj['nome'].lower()]
             total_comprado = sum(f['valor_total'] for f in compras_cli)
             total_pago = sum(f['valor_pago'] for f in compras_cli)
             debito = sum(f['saldo_restante'] for f in compras_cli)
@@ -301,7 +309,10 @@ elif menu == "🛠️ Atendimentos":
             st.warning("Cadastre clientes primeiro para vincular atendimentos.")
         else:
             with st.form("form_atend"):
-                cli_nome = st.selectbox("Cliente", [c['nome'] for c in clientes])
+                cliente_opcoes = {f"{c['nome']} (ID: {c['id']})": c for c in clientes}
+                cli_escolhido_str = st.selectbox("Cliente", list(cliente_opcoes.keys()))
+                cli_obj = cliente_opcoes[cli_escolhido_str]
+                
                 servico = st.text_input("Serviço ou Produto")
                 descricao = st.text_area("Descrição detalhada")
                 valor = st.number_input("Valor (R$)", min_value=0.0, format="%.2f")
@@ -309,9 +320,11 @@ elif menu == "🛠️ Atendimentos":
                 status_atend = st.selectbox("Status", ["Concluído", "Em Andamento", "Agendado"])
                 
                 if st.form_submit_button("Registar Atendimento"):
+                    novo_at_id = max([a.get('id', 0) for a in atendimentos], default=0) + 1
                     novo_at = {
-                        "id": len(atendimentos) + 1,
-                        "cliente": cli_nome,
+                        "id": novo_at_id,
+                        "cliente_id": cli_obj['id'],
+                        "cliente": cli_obj['nome'],
                         "servico": servico.strip(),
                         "descricao": descricao.strip(),
                         "valor": valor,
@@ -323,9 +336,11 @@ elif menu == "🛠️ Atendimentos":
                     salvar_dados(ARQ_ATENDIMENTOS, atendimentos)
                     
                     financeiro = carregar_dados(ARQ_FINANCEIRO)
+                    novo_fin_id = max([f.get('id', 0) for f in financeiro], default=0) + 1
                     novo_fin = {
-                        "id": len(financeiro) + 1,
-                        "cliente": cli_nome,
+                        "id": novo_fin_id,
+                        "cliente_id": cli_obj['id'],
+                        "cliente": cli_obj['nome'],
                         "descricao": f"Atendimento #{novo_at['id']} - {servico}",
                         "valor_total": valor,
                         "valor_pago": valor if pagamento_forma != "A Prazo" else 0.0,
@@ -396,8 +411,9 @@ elif menu == "💰 Financeiro":
                 if not cli or val <= 0:
                     st.error("Preencha os campos corretamente.")
                 else:
+                    novo_fin_id = max([f.get('id', 0) for f in financeiro], default=0) + 1
                     novo_f = {
-                        "id": len(financeiro) + 1,
+                        "id": novo_fin_id,
                         "cliente": cli.strip(),
                         "descricao": desc.strip(),
                         "valor_total": val,
@@ -493,8 +509,8 @@ elif menu == "ℹ️ Sobre o Sistema":
     st.title("ℹ️ Sobre o Sistema")
     st.markdown("""
     ### 🌟 PRIME TECH SOLUTIONS — SISTEMA DE GESTÃO
-    * **Versão:** 1.0.0
+    * **Versão:** 1.1.0 (Enterprise Blinded)
     * **Desenvolvida por:** Daniela Reis
     * **Tecnologia:** Python, Streamlit & JSON Storage
-    * **Propósito:** Aplicação comercial projetada para automação de cadastros de clientes, controlo de fluxo de caixa, validações algorítmicas, histórico, relatórios e mecanismos de backup.
+    * **Propósito:** Aplicação comercial projetada para automação de cadastros de clientes, controlo de fluxo de caixa, validações algorítmicas, histórico, relatórios e mecanismos de backup seguro.
     """)
