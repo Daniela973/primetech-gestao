@@ -120,7 +120,7 @@ def formatar_cpf(cpf):
         return f"{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}"
     return cpf
 
-# --- CONTROLO DE AUTENTICAÇÃO SEGURA (SEM FALLBACK INSEGURO) ---
+# --- CONTROLO DE AUTENTICAÇÃO SEGURA (DIRETO NO CÓDIGO) ---
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
 
@@ -134,14 +134,9 @@ if not st.session_state.autenticado:
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # Verificação rigorosa de segredos (sem senhas hardcoded)
-        if "SENHA_ADMIN" not in st.secrets:
-            st.error("❌ ERRO DE CONFIGURAÇÃO: A chave 'SENHA_ADMIN' não está configurada nos Secrets do Streamlit.")
-            st.stop()
-            
         senha = st.text_input("Digite a senha de acesso:", type="password")
         if st.button("Entrar no Sistema", use_container_width=True):
-            if senha == st.secrets["SENHA_ADMIN"]:
+            if senha == "13071990":
                 st.session_state.autenticado = True
                 st.rerun()
             else:
@@ -227,7 +222,6 @@ elif menu == "👥 Clientes":
                         cli_existente = next(c for c in clientes if c['cpf'] == cpf_formatado)
                         st.warning(f"⚠️ Este CPF já pertence ao cliente: {cli_existente['nome']}")
                     else:
-                        # Geração de ID segura baseada no maior ID existente (evita duplicatas)
                         novo_id = max([c.get('id', 0) for c in clientes], default=0) + 1
                         novo_c = {
                             "id": novo_id,
@@ -267,7 +261,6 @@ elif menu == "👥 Clientes":
             cli_obj = next(c for c in clientes if c['id'] == cli_id)
             
             financeiro = carregar_dados(ARQ_FINANCEIRO)
-            # Relacionamento seguro por ID ou nome correspondente
             compras_cli = [f for f in financeiro if f.get('cliente_id') == cli_id or f['cliente'].lower() == cli_obj['nome'].lower()]
             total_comprado = sum(f['valor_total'] for f in compras_cli)
             total_pago = sum(f['valor_pago'] for f in compras_cli)
@@ -509,7 +502,7 @@ elif menu == "ℹ️ Sobre o Sistema":
     st.title("ℹ️ Sobre o Sistema")
     st.markdown("""
     ### 🌟 PRIME TECH SOLUTIONS — SISTEMA DE GESTÃO
-    * **Versão:** 1.1.0 (Enterprise Blinded)
+    * **Versão:** 1.1.2 (Direct Secure)
     * **Desenvolvida por:** Daniela Reis
     * **Tecnologia:** Python, Streamlit & JSON Storage
     * **Propósito:** Aplicação comercial projetada para automação de cadastros de clientes, controlo de fluxo de caixa, validações algorítmicas, histórico, relatórios e mecanismos de backup seguro.
