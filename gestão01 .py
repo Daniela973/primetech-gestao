@@ -514,4 +514,3 @@ elif menu == "ℹ️ Sobre o Sistema":
     * **Tecnologia:** Python, Streamlit & JSON Storage
     * **Propósito:** Aplicação comercial projetada para automação de cadastros de clientes, controlo de fluxo de caixa, validações algorítmicas, histórico, relatórios e mecanismos de backup seguro.
     """)
-
